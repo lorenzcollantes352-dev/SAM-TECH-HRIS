@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAM Technology - Employee Portal</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            min-height: 100vh; 
+            display: flex; 
+            align-items: center;
+            
+            /* BACKGROUND PHOTO PLACEHOLDER */
+            background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), 
+                              url('beautiful-architecture-building.jpg'); 
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        .container { 
+            width: 95%; 
+            max-width: 600px; 
+            /* Semi-transparent white for readability over the photo */
+            background: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(10px); 
+            padding: 40px; 
+            border-radius: 16px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3); 
+            margin: auto; 
+            position: relative;
+        }
+        
+        /* ... Keeping the rest of the styles from previous version ... */
+        .logo-container { text-align: center; margin-bottom: 10px; }
+        .logo-container img { max-width: 160px; height: auto; }
+        h2 { color: #090979; font-weight: 800; margin-top: 0; text-align: center; margin-bottom: 10px; }
+        .nav-tabs { display: flex; justify-content: center; margin-bottom: 25px; gap: 8px; flex-wrap: wrap; }
+        .nav-btn { background: #f0f0f0; border: none; padding: 10px 15px; border-radius: 20px; cursor: pointer; font-weight: 600; color: #666; transition: 0.3s; font-size: 0.85em; }
+        .nav-btn.active { background: #090979; color: white; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .full-row { grid-column: span 2; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #444; font-size: 0.85em; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        .punch-box { background: #f8f9fa; padding: 35px 25px; border-radius: 12px; text-align: center; margin-bottom: 20px; border: 1px solid #eee; }
+        .btn-main { padding: 18px 0; width: 46%; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin: 0 1%; text-transform: uppercase; }
+        .btn-in { background-color: #28a745; color: white; }
+        .btn-out { background-color: #dc3545; color: white; }
+        .announce-card { background: #fff9c4; padding: 25px; border-radius: 12px; border-left: 5px solid #fbc02d; margin-bottom: 20px; }
+        .announce-time { font-size: 0.75em; color: #795548; margin-top: 15px; display: block; font-style: italic; }
+        .btn-submit { width: 100%; background-color: #090979; color: white; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        #loader { display: none; border: 3px solid #f3f3f3; border-top: 3px solid #090979; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 15px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #successMessage { display: none; text-align: center; padding: 30px; }
+        .admin-access { text-align: center; margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px; }
+        .btn-admin { background: none; border: none; color: #999; font-size: 0.75em; cursor: pointer; text-decoration: underline; }
+        #adminModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 25px; border-radius: 8px; width: 300px; text-align: center; }
+        @media (max-width: 500px) { .info-grid { grid-template-columns: 1fr; } .full-row { grid-column: span 1; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="mainContent">
+        <div class="logo-container"><img src="SAM TECH LOGO.jpg" alt="Logo"></div>
+        <h2>SAM Technology LLC</h2>
+
+        <div class="nav-tabs">
+            <button id="tabPunch" class="nav-btn active" onclick="showSection('punch')">Punch Clock</button>
+            <button id="tabReg" class="nav-btn" onclick="showSection('reg')">Registration</button>
+            <button id="tabAnnounce" class="nav-btn" onclick="showSection('announce')">Announcements</button>
+        </div>
+        
+        <div id="punchSection">
+            <form id="shiftForm">
+                <div class="info-grid">
+                    <div class="full-row"><label>Employee Name</label><input type="text" id="empName" required></div>
+                    <div><label>Project Number</label><input type="text" id="projNum" required></div>
+                    <div><label>Email Address</label><input type="email" id="empEmail" required></div>
+                </div>
+                <div class="punch-box">
+                    <button type="button" id="globalIn" class="btn-main btn-in" onclick="punchIn()">Clock In</button>
+                    <button type="button" id="globalOut" class="btn-main btn-out" onclick="punchOut()" disabled>Clock Out</button>
+                    <div id="statusText" style="margin-top:20px; font-weight:600; color:#090979;">Fill info to start</div>
+                </div>
+            </form>
+        </div>
+
+        <div id="regSection" style="display: none;">
+            <form id="regForm">
+                <div class="info-grid">
+                    <div class="full-row"><label>Full Name</label><input type="text" id="regName" required></div>
+                    <div><label>Birthday</label><input type="date" id="regBday" onchange="calculateAge()" required></div>
+                    <div><label>Age</label><input type="number" id="regAge" readonly></div>
+                    <div class="full-row"><label>Email Address</label><input type="email" id="regEmail" required></div>
+                </div>
+                <button type="submit" class="btn-submit">Register Employee</button>
+            </form>
+        </div>
+
+        <div id="announceSection" style="display: none;">
+            <div class="announce-card">
+                <h3 style="margin-top:0; color:#f57f17;">📢 Notice Board</h3>
+                <p id="announcementText" style="line-height:1.5; color:#5d4037;">Loading updates...</p>
+                <span id="announcementDate" class="announce-time"></span>
+            </div>
+        </div>
+
+        <div id="loader"></div>
+        <p id="autoMsg" style="text-align:center; font-size: 0.8em; color: #666; display:none;">Processing...</p>
+
+        <div class="admin-access"><button class="btn-admin" onclick="openAdmin()">Admin Monitoring</button></div>
+    </div>
+
+    <div id="adminModal">
+        <div class="modal-content">
+            <h4>Admin Login</h4>
+            <input type="password" id="adminPass" style="margin-bottom:15px; width:90%; padding:8px;">
+            <button onclick="checkAdmin()" style="width:100%; background:#090979; color:white; border:none; padding:10px; border-radius:4px;">Login</button>
+            <button onclick="closeAdmin()" style="background:none; border:none; margin-top:10px; cursor:pointer;">Cancel</button>
+        </div>
+    </div>
+
+    <div id="successMessage">
+        <div style="font-size: 60px;">✅</div>
+        <h3>Action Successful</h3>
+        <p id="summaryText"></p>
+        <button onclick="window.location.reload()" style="background:#090979; padding: 12px 25px; color: white; border: none; border-radius: 6px; cursor: pointer;">Return Home</button>
+    </div>
+</div>
+
+<script>
+    /* ... JavaScript remains exactly as the previous version ... */
+    const WEB_APP_URL = 'YOUR_DEPLOYED_URL_HERE'; 
+    const DATABASE_URL = 'https://docs.google.com/spreadsheets/d/1mpatNmcl5cyaIgUrcoTPnqpjH3EMFj9k3mUzz0BkPmo/edit';
+    const ADMIN_PASSWORD = 'SAMT2026';
+    let startTime = null;
+
+    window.onload = async () => {
+        try {
+            const res = await fetch(WEB_APP_URL);
+            const data = await res.json();
+            document.getElementById('announcementText').innerText = data.message;
+            document.getElementById('announcementDate').innerText = "Last updated: " + data.updated;
+        } catch (e) { document.getElementById('announcementText').innerText = "No current announcements."; }
+    };
+
+    function showSection(type) {
+        ['punchSection', 'regSection', 'announceSection'].forEach(s => document.getElementById(s).style.display = 'none');
+        ['tabPunch', 'tabReg', 'tabAnnounce'].forEach(t => document.getElementById(t).classList.remove('active'));
+        document.getElementById(type + 'Section').style.display = 'block';
+        document.getElementById('tab' + type.charAt(0).toUpperCase() + type.slice(1)).classList.add('active');
+    }
+
+    function calculateAge() {
+        const bdayInput = document.getElementById('regBday').value;
+        if (!bdayInput) return;
+        const bday = new Date(bdayInput);
+        const age = new Date().getFullYear() - bday.getFullYear();
+        document.getElementById('regAge').value = age;
+    }
+
+    function punchIn() {
+        if(!document.getElementById('empName').value) return alert("Please enter Employee Name!");
+        startTime = new Date();
+        document.getElementById('globalIn').disabled = true;
+        document.getElementById('globalOut').disabled = false;
+        document.getElementById('statusText').innerText = "Clocked In: " + startTime.toLocaleTimeString();
+    }
+
+    async function punchOut() {
+        const endTime = new Date();
+        const diff = (endTime - startTime) / 3600000;
+        const reg = diff > 8 ? 8 : diff;
+        const ot = diff > 8 ? Math.min(4, diff - 8) : 0;
+        const days = ['sun','mon','tue','wed','thu','fri','sat'];
+        const dayKey = days[endTime.getDay()];
+
+        const data = { type: 'punch', employeeName: document.getElementById('empName').value, projectNumber: document.getElementById('projNum').value, employeeEmail: document.getElementById('empEmail').value, totalReg: reg.toFixed(2), totalOT: ot.toFixed(2), grandTotal: (reg+ot).toFixed(2) };
+        days.forEach(d => { data[d] = 0; data[d+'OT'] = 0; });
+        data[dayKey] = reg.toFixed(2); data[dayKey+'OT'] = ot.toFixed(2);
+        
+        await sendData(data, "Time Logged Successfully.");
+    }
+
+    document.getElementById('regForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const data = { type: 'registration', name: document.getElementById('regName').value, birthday: document.getElementById('regBday').value, age: document.getElementById('regAge').value, email: document.getElementById('regEmail').value };
+        await sendData(data, "Employee Registered.");
+    };
+
+    async function sendData(data, msg) {
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('autoMsg').style.display = 'block';
+        await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
+        document.getElementById('mainContent').style.display = 'none';
+        document.getElementById('successMessage').style.display = 'block';
+        document.getElementById('summaryText').innerText = msg;
+    }
+
+    function openAdmin() { document.getElementById('adminModal').style.display = 'flex'; }
+    function closeAdmin() { document.getElementById('adminModal').style.display = 'none'; }
+    function checkAdmin() {
+        if (document.getElementById('adminPass').value === ADMIN_PASSWORD) { window.open(DATABASE_URL, '_blank'); closeAdmin(); }
+        else alert("Wrong password.");
+    }
+</script>
+</body>
+</html>
