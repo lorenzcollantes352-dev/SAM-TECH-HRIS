@@ -45,7 +45,7 @@
         .btn-submit { width: 100%; background-color: #090979; color: white; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
         .announce-card { background: #fff9c4; padding: 20px; border-radius: 12px; border-left: 5px solid #fbc02d; }
         #loader { display: none; border: 3px solid #f3f3f3; border-top: 3px solid #090979; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 15px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(3600deg); } }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         #adminModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; padding: 30px; border-radius: 12px; width: 300px; text-align: center; }
@@ -99,7 +99,11 @@
                     <div class="full-row"><label>Full Name</label><input type="text" id="regName" required></div>
                     <div><label>Birthday</label><input type="date" id="regBday" onchange="calculateAge()" required></div>
                     <div><label>Age</label><input type="number" id="regAge" readonly></div>
+                    
+                    <div class="full-row"><label>Phone Number</label><input type="tel" id="regPhone" placeholder="Enter contact number" required></div>
                     <div class="full-row"><label>Email Address</label><input type="email" id="regEmail" required></div>
+                    
+                    <div class="full-row"><label>Home Address</label><input type="text" id="regAddress" placeholder="Complete Address" required></div>
                 </div>
                 <button type="submit" class="btn-submit">Register Employee</button>
             </form>
@@ -134,7 +138,7 @@
 </div>
 
 <script>
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwXRzBHHxt2R2jZccd7MZ-CSUsSvhSWjLYj1li_6TZkLmh3sLeP1g_Bn6wiYTtjwpbpiA/exec'; 
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxTFSYJ5zBVL5z1oU5tbvVrow6K10fom98Y4a-4GWz9CgI41Rq2h9J7_4DY3STwVxhoZQ/exec'; 
     const DATABASE_URL = 'https://docs.google.com/spreadsheets/d/1mpatNmcl5cyaIgUrcoTPnqpjH3EMFj9k3mUzz0BkPmo/edit';
     const ADMIN_PASSWORD = 'SAMT2026';
     const daysArr = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -161,7 +165,6 @@
         } catch (e) { document.getElementById('announcementText').innerText = "Notice: Check back later."; }
     };
 
-    // Timesheet Submission Logic
     document.getElementById('shiftForm').onsubmit = async (e) => {
         e.preventDefault();
         const proj = document.getElementById('projNum').value;
@@ -179,7 +182,6 @@
             const d = day.toLowerCase();
             const timeIn = document.getElementById(`in-${d}`).value;
             const timeOut = document.getElementById(`out-${d}`).value;
-            
             if (timeIn && timeOut) {
                 const start = new Date(`2026-01-01T${timeIn}:00`);
                 let end = new Date(`2026-01-01T${timeOut}:00`);
@@ -189,19 +191,14 @@
                 const ot = diff > 8 ? diff - 8 : 0;
                 payload[d] = reg.toFixed(2); payload[d+'OT'] = ot.toFixed(2);
                 totalRegAll += reg; totalOTAll += ot;
-            } else {
-                payload[d] = 0; payload[d+'OT'] = 0;
-            }
+            } else { payload[d] = 0; payload[d+'OT'] = 0; }
         });
-
         payload.totalReg = totalRegAll.toFixed(2);
         payload.totalOT = totalOTAll.toFixed(2);
         payload.grandTotal = (totalRegAll + totalOTAll).toFixed(2);
-
         await sendData(payload, "Weekly hours have been logged successfully.");
     };
 
-    // NEW: Registration Submission Logic
     document.getElementById('regForm').onsubmit = async (e) => {
         e.preventDefault();
         const payload = {
@@ -209,17 +206,16 @@
             fullName: document.getElementById('regName').value,
             birthday: document.getElementById('regBday').value,
             age: document.getElementById('regAge').value,
-            email: document.getElementById('regEmail').value
+            phone: document.getElementById('regPhone').value,
+            email: document.getElementById('regEmail').value,
+            address: document.getElementById('regAddress').value
         };
-
         await sendData(payload, `New employee registration for ${payload.fullName} was successful.`);
     };
 
     async function sendData(data, msg) {
         document.getElementById('loader').style.display = 'block';
-        // Using no-cors as per original requirement for Google Apps Script POST
         await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
-        
         document.getElementById('loader').style.display = 'none';
         document.getElementById('mainContent').style.display = 'none';
         document.getElementById('successMessage').style.display = 'block';
@@ -255,7 +251,3 @@
 </script>
 </body>
 </html>
-
-
-
-
