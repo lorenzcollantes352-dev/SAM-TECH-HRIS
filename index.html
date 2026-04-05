@@ -40,7 +40,8 @@
         th { background: #090979; color: white; padding: 10px; text-align: left; }
         td { padding: 8px; border-bottom: 1px solid #eee; }
         .day-label { font-weight: bold; color: #090979; }
-        .time-input { padding: 5px; width: 100%; border: 1px solid #ccc; border-radius: 4px; }
+        
+        .time-input { padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; text-align: center; }
 
         .btn-submit { width: 100%; background-color: #090979; color: white; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
         .announce-card { background: #fff9c4; padding: 20px; border-radius: 12px; border-left: 5px solid #fbc02d; }
@@ -74,9 +75,9 @@
                 <div class="info-grid">
                     <div class="full-row"><label>Employee Name</label><input type="text" id="empName" required></div>
                     <div class="full-row">
-                        <label>Active Project Number</label>
-                        <input list="projectList" id="projNum" placeholder="Select project..." required>
-                        <datalist id="projectList"></datalist>
+                        <label>Current Jobsite</label>
+                        <input list="jobsiteList" id="jobSite" placeholder="Enter or select jobsite location..." required>
+                        <datalist id="jobsiteList"></datalist>
                     </div>
                     <div class="full-row"><label>Email Address</label><input type="email" id="empEmail" required></div>
                 </div>
@@ -84,7 +85,11 @@
                 <div class="weekly-container">
                     <table>
                         <thead>
-                            <tr><th>Day</th><th>Time In</th><th>Time Out</th></tr>
+                            <tr>
+                                <th>Day</th>
+                                <th>Regular Hours</th>
+                                <th>Overtime Hours</th>
+                            </tr>
                         </thead>
                         <tbody id="weeklyBody"></tbody>
                     </table>
@@ -99,11 +104,9 @@
                     <div class="full-row"><label>Full Name</label><input type="text" id="regName" required></div>
                     <div><label>Birthday</label><input type="date" id="regBday" onchange="calculateAge()" required></div>
                     <div><label>Age</label><input type="number" id="regAge" readonly></div>
-                    
-                    <div class="full-row"><label>Phone Number</label><input type="tel" id="regPhone" placeholder="Enter contact number" required></div>
+                    <div class="full-row"><label>Phone Number</label><input type="tel" id="regPhone" required></div>
                     <div class="full-row"><label>Email Address</label><input type="email" id="regEmail" required></div>
-                    
-                    <div class="full-row"><label>Home Address</label><input type="text" id="regAddress" placeholder="Complete Address" required></div>
+                    <div class="full-row"><label>Home Address</label><input type="text" id="regAddress" required></div>
                 </div>
                 <button type="submit" class="btn-submit">Register Employee</button>
             </form>
@@ -142,15 +145,15 @@
     const DATABASE_URL = 'https://docs.google.com/spreadsheets/d/1mpatNmcl5cyaIgUrcoTPnqpjH3EMFj9k3mUzz0BkPmo/edit';
     const ADMIN_PASSWORD = 'SAMT2026';
     const daysArr = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-    let validProjects = [];
 
     window.onload = async () => {
         const tbody = document.getElementById('weeklyBody');
         daysArr.forEach(day => {
+            // Revised to direct Regular and Overtime inputs
             tbody.innerHTML += `<tr>
                 <td class="day-label">${day}</td>
-                <td><input type="time" id="in-${day.toLowerCase()}" class="time-input"></td>
-                <td><input type="time" id="out-${day.toLowerCase()}" class="time-input"></td>
+                <td><input type="number" step="0.5" id="reg-${day.toLowerCase()}" class="time-input" placeholder="0"></td>
+                <td><input type="number" step="0.5" id="ot-${day.toLowerCase()}" class="time-input" placeholder="0"></td>
             </tr>`;
         });
 
@@ -159,58 +162,41 @@
             const data = await res.json();
             document.getElementById('announcementText').innerText = data.message;
             document.getElementById('announcementDate').innerText = "Last Updated: " + data.updated;
-            validProjects = data.validProjects || [];
-            const list = document.getElementById('projectList');
-            validProjects.forEach(p => { let o = document.createElement('option'); o.value = p; list.appendChild(o); });
+            
+            const list = document.getElementById('jobsiteList');
+            const validLocations = data.validProjects || []; 
+            validLocations.forEach(p => { let o = document.createElement('option'); o.value = p; list.appendChild(o); });
         } catch (e) { document.getElementById('announcementText').innerText = "Notice: Check back later."; }
     };
 
     document.getElementById('shiftForm').onsubmit = async (e) => {
         e.preventDefault();
-        const proj = document.getElementById('projNum').value;
-        if (validProjects.length > 0 && !validProjects.includes(proj)) return alert("Error: Invalid Project Number.");
-
+        
         let totalRegAll = 0, totalOTAll = 0;
         const payload = {
             type: 'punch',
             employeeName: document.getElementById('empName').value,
-            projectNumber: proj,
+            jobsite: document.getElementById('jobSite').value,
             employeeEmail: document.getElementById('empEmail').value
         };
 
         daysArr.forEach(day => {
             const d = day.toLowerCase();
-            const timeIn = document.getElementById(`in-${d}`).value;
-            const timeOut = document.getElementById(`out-${d}`).value;
-            if (timeIn && timeOut) {
-                const start = new Date(`2026-01-01T${timeIn}:00`);
-                let end = new Date(`2026-01-01T${timeOut}:00`);
-                if (end < start) end.setDate(end.getDate() + 1);
-                const diff = (end - start) / 3600000;
-                const reg = diff > 8 ? 8 : diff;
-                const ot = diff > 8 ? diff - 8 : 0;
-                payload[d] = reg.toFixed(2); payload[d+'OT'] = ot.toFixed(2);
-                totalRegAll += reg; totalOTAll += ot;
-            } else { payload[d] = 0; payload[d+'OT'] = 0; }
+            const regVal = parseFloat(document.getElementById(`reg-${d}`).value) || 0;
+            const otVal = parseFloat(document.getElementById(`ot-${d}`).value) || 0;
+            
+            payload[d] = regVal.toFixed(1); 
+            payload[d+'OT'] = otVal.toFixed(1);
+            
+            totalRegAll += regVal; 
+            totalOTAll += otVal;
         });
+        
         payload.totalReg = totalRegAll.toFixed(2);
         payload.totalOT = totalOTAll.toFixed(2);
         payload.grandTotal = (totalRegAll + totalOTAll).toFixed(2);
+        
         await sendData(payload, "Weekly hours have been logged successfully.");
-    };
-
-    document.getElementById('regForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const payload = {
-            type: 'registration',
-            fullName: document.getElementById('regName').value,
-            birthday: document.getElementById('regBday').value,
-            age: document.getElementById('regAge').value,
-            phone: document.getElementById('regPhone').value,
-            email: document.getElementById('regEmail').value,
-            address: document.getElementById('regAddress').value
-        };
-        await sendData(payload, `New employee registration for ${payload.fullName} was successful.`);
     };
 
     async function sendData(data, msg) {
