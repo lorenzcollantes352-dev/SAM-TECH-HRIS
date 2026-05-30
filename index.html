@@ -141,7 +141,8 @@
 </div>
 
 <script>
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbx4f9cdO0-yDQGjmETJlaOKhSK2qrsRIP6_I9ySYUDwXhZjbojOZkz56ogjUHt5mnWq/exec'; 
+    // MAKE SURE TO PASTE YOUR LIVE APPS SCRIPT URL HERE AFTER DEPLOYMENT
+    const WEB_APP_URL = 'https://script.google.com/macros/library/d/1IngUEK5JUJdsOoZMs2Ar1mrc7YFDc1vgHCLGnLfFOPDH7UuYYQ76IS8m/1'; 
     const DATABASE_URL = 'https://docs.google.com/spreadsheets/d/1EEy-JRLaLDDX3ykj22L9Pl7wO-DovyxkxoT-FxJmxvY/edit?usp=sharing';
     const ADMIN_PASSWORD = 'SAMT2026';
     const daysArr = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -149,7 +150,6 @@
     window.onload = async () => {
         const tbody = document.getElementById('weeklyBody');
         daysArr.forEach(day => {
-            // Revised to direct Regular and Overtime inputs
             tbody.innerHTML += `<tr>
                 <td class="day-label">${day}</td>
                 <td><input type="number" step="0.5" id="reg-${day.toLowerCase()}" class="time-input" placeholder="0"></td>
@@ -169,6 +169,7 @@
         } catch (e) { document.getElementById('announcementText').innerText = "Notice: Check back later."; }
     };
 
+    // Form submission processing for Timesheet hours
     document.getElementById('shiftForm').onsubmit = async (e) => {
         e.preventDefault();
         
@@ -197,6 +198,23 @@
         payload.grandTotal = (totalRegAll + totalOTAll).toFixed(2);
         
         await sendData(payload, "Weekly hours have been logged successfully.");
+    };
+
+    // FIXED: Form submission processing for New Employee Registrations
+    document.getElementById('regForm').onsubmit = async (e) => {
+        e.preventDefault();
+        
+        const payload = {
+            type: 'reg',
+            fullName: document.getElementById('regName').value,
+            birthday: document.getElementById('regBday').value,
+            age: document.getElementById('regAge').value,
+            phone: document.getElementById('regPhone').value,
+            email: document.getElementById('regEmail').value,
+            address: document.getElementById('regAddress').value
+        };
+        
+        await sendData(payload, "Employee registration details saved successfully.");
     };
 
     async function sendData(data, msg) {
